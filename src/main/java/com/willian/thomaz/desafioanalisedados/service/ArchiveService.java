@@ -1,27 +1,25 @@
 package com.willian.thomaz.desafioanalisedados.service;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ArchiveService {
 
-    public File getArchive(String path) {
-        return new File(path);
+    public Path getArchive(String directory) {
+        return Paths.get(directory);
     }
 
-    public FileReader getFileReader(File file) {
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(file);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return fileReader;
+    public List<String> getLines(BufferedReader bufferedReader) {
+        return bufferedReader.lines().collect(Collectors.toList());
     }
 
-    public BufferedReader getBufferedReader(FileReader fileReader) {
-        return new BufferedReader(fileReader);
+    public BufferedReader getBufferedReader(Path path) throws IOException {
+        return Files.newBufferedReader(path, StandardCharsets.UTF_8);
     }
-
 }

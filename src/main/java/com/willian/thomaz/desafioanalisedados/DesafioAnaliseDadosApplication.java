@@ -11,9 +11,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,49 +20,59 @@ import java.util.List;
 @SpringBootApplication
 public class DesafioAnaliseDadosApplication {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         SpringApplication.run(DesafioAnaliseDadosApplication.class, args);
 
         SalesService salesService = new SalesService();
         SellerService sellerService = new SellerService();
         ClientService clientService = new ClientService();
-        List<Seller> sellers = new ArrayList<>();
-        List<Client> clients = new ArrayList<>();
-        List<Sales> sales = new ArrayList<>();
+        ArchiveService archiveService = new ArchiveService();
 
-        try {
-            ArchiveService archiveService = new ArchiveService();
-            File archive = archiveService.getArchive("C:\\Users\\SouthSystem\\Desktop\\doc.dat");
-            FileReader fileReader = archiveService.getFileReader(archive);
-            BufferedReader bufferedReader = archiveService.getBufferedReader(fileReader);
+        Path path = archiveService.getArchive("C:\\Users\\SouthSystem\\Desktop\\desafio\\");
+        WatchService watcher = FileSystems.getDefault().newWatchService();
+        path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_MODIFY,
+                StandardWatchEventKinds.ENTRY_DELETE,
+                StandardWatchEventKinds.OVERFLOW);
 
-            while (bufferedReader.ready()) {
-                String line = bufferedReader.readLine();
-                if (line.contains("ç")) {
-                    List<String> list = Arrays.asList(line.split("ç"));
-                    List<String> list2 = Arrays.asList(list.get(2).replace("[", "").replace("]", "").split(","));
-                    if (list.contains("001")) {
-                        sellers.add(sellerService.createSeller(list));
-                    }
-                    if (list.contains("002")) {
-                        clients.add(clientService.createClient(list));
-                    }
-                    if (list.contains("003")) {
-                        sales.add(salesService.createSales(list, list2));
+        WatchKey key;
+        while (((key = watcher.take()) != null)) {
+            List<Seller> sellers = new ArrayList<>();
+            List<Client> clients = new ArrayList<>();
+            List<Sales> sales = new ArrayList<>();
+            for (WatchEvent<?> event : key.pollEvents()) {
+                String filename = event.context().toString();
+                if (Files.isDirectory(path)) {
+                    DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
+                    for (Path cam : directoryStream) {
+                        BufferedReader bufferedReader = archiveService.getBufferedReader(cam);
+                        while (bufferedReader.ready()) {
+                            String line = bufferedReader.readLine();
+                            if (line.contains("ç")) {
+                                List<String> list = Arrays.asList(line.split("ç"));
+                                List<String> list2 = Arrays.asList(list.get(2).replace("[", "").replace("]", "").split(","));
+                                if (list.contains("001")) {
+                                    sellers.add(sellerService.createSeller(list));
+                                }
+                                if (list.contains("002")) {
+                                    clients.add(clientService.createClient(list));
+                                }
+                                if (list.contains("003")) {
+                                    sales.add(salesService.createSales(list, list2));
+                                }
+                            }
+                        }
+                        bufferedReader.close();
                     }
                 }
             }
-                bufferedReader.close();
-                fileReader.close();
-                System.out.println("Quantidade de vendedor no arquivo de entrada: " + sellerService.getSellerSize(sellers));
-                System.out.println("Quantidade de clientes no arquivo de entrada: " + clientService.getClientsize(clients));
-                System.out.println("ID da venda mais cara: " + salesService.mostExpensiveSaleId(sales));
-                System.out.println("O pior vendedor: " + sellerService.getWorstSeller(sales));
-            }catch(IOException e){
-            e.printStackTrace();
-            }
+            System.out.println("Quantidade de vendedor no arquivo de entrada: " + sellerService.getSellerSize(sellers));
+            System.out.println("Quantidade de clientes no arquivo de entrada: " + clientService.getClientsize(clients));
+            System.out.println("ID da venda mais cara: " + salesService.mostExpensiveSaleId(sales));
+            System.out.println("O pior vendedor: " + sellerService.getWorstSeller(sales));
+            key.reset();
         }
+    }
 }
-
 
 
