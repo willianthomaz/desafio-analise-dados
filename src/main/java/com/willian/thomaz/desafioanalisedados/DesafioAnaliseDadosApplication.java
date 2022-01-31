@@ -48,7 +48,7 @@ public class DesafioAnaliseDadosApplication {
             key.pollEvents();
             DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path);
             for (Path pathDirectory : directoryStream) {
-                if (path.toString().endsWith(".dat")) {
+                if (pathDirectory.toString().endsWith(".dat")) {
                     BufferedReader bufferedReader = archiveService.getBufferedReader(pathDirectory);
                     while (bufferedReader.ready()) {
                         String line = bufferedReader.readLine();
@@ -68,9 +68,14 @@ public class DesafioAnaliseDadosApplication {
                     }
                     bufferedReader.close();
                 } else {
-                    System.out.println("Tipo de arquivo não aceito");
+                    System.out.println("Arquivo *" + pathDirectory.getFileName() + "* não é um arquivo .dat");
+                    Path pathOutAccepted = archiveService.getArchive(System.getProperty("user.home") + "\\data\\file output not accepted\\");
+                    if (!Files.exists(pathOutAccepted)) {
+                        Files.createDirectory(pathOutAccepted);
+                    }
+                    Files.move(pathDirectory, pathOutAccepted.resolve(pathDirectory.getFileName()), StandardCopyOption.REPLACE_EXISTING);
                 }
-                
+
                 BufferedWriter bufferedWriter = archiveService.getBufferedWriter(Paths.get(System.getProperty("user.home") + "\\data\\out\\result.done.dat"));
                 bufferedWriter.write("Quantidade de vendedor no arquivo de entrada: " + sellerService.getSellerSize(sellers) + "\n"
                         + "Quantidade de cliente no arquivo de entrada: " + clientService.getClientsize(clients) + "\n"
@@ -78,11 +83,6 @@ public class DesafioAnaliseDadosApplication {
                         + "O pior vendedor: " + sellerService.getWorstSeller(sales));
                 bufferedWriter.newLine();
                 bufferedWriter.close();
-                
-                System.out.println("Quantidade de vendedor no arquivo de entrada: " + sellerService.getSellerSize(sellers));
-                System.out.println("Quantidade de clientes no arquivo de entrada: " + clientService.getClientsize(clients));
-                System.out.println("ID da venda mais cara: " + salesService.mostExpensiveSaleId(sales));
-                System.out.println("O pior vendedor: " + sellerService.getWorstSeller(sales));
                 key.reset();
             }
         }
